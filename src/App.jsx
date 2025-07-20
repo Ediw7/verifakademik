@@ -7,7 +7,7 @@ import VerifyDocument from './pages/VerifyDocument';
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="bg-slate-900 text-slate-300 min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow">
         <Routes>

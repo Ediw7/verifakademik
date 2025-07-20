@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Shield, FileCheck, Lock, Cpu, Upload, CheckCircle, XCircle, Eye } from 'lucide-react';
+import Footer from '../components/Footer'; // Impor komponen Footer
 
 function VerifyDocument() {
   const [file, setFile] = useState(null);
@@ -22,10 +23,8 @@ function VerifyDocument() {
     data.append('file', file);
 
     try {
-      // Simulated API call since axios isn't available
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Mock response for demo
       if (Math.random() > 0.5) {
         setResult({
           message: 'Dokumen berhasil diverifikasi dan terbukti asli',
@@ -48,7 +47,6 @@ function VerifyDocument() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
@@ -56,7 +54,6 @@ function VerifyDocument() {
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-8">
-        {/* Header */}
         <header className="text-center mt-20 mb-16">
           <div className="flex items-center justify-center mb-6">
             <div className="bg-gradient-to-r from-purple-500 to-cyan-500 p-4 rounded-2xl shadow-2xl">
@@ -71,7 +68,6 @@ function VerifyDocument() {
           </p>
         </header>
 
-        {/* Features Grid */}
         <section className="grid md:grid-cols-3 gap-8 mb-16">
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
             <div className="bg-gradient-to-r from-purple-500 to-indigo-500 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
@@ -80,7 +76,6 @@ function VerifyDocument() {
             <h3 className="text-xl font-semibold text-white mb-3">Enkripsi AES-256</h3>
             <p className="text-gray-300">Dokumen dienkripsi menggunakan Advanced Encryption Standard 256-bit untuk keamanan maksimal.</p>
           </div>
-
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
             <div className="bg-gradient-to-r from-cyan-500 to-blue-500 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
               <FileCheck className="w-6 h-6 text-white" />
@@ -88,7 +83,6 @@ function VerifyDocument() {
             <h3 className="text-xl font-semibold text-white mb-3">Tanda Tangan RSA</h3>
             <p className="text-gray-300">Menggunakan algoritma RSA untuk tanda tangan digital yang memastikan autentikasi dokumen.</p>
           </div>
-
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:bg-slate-800/70 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
             <div className="bg-gradient-to-r from-emerald-500 to-teal-500 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
               <Cpu className="w-6 h-6 text-white" />
@@ -98,7 +92,6 @@ function VerifyDocument() {
           </div>
         </section>
 
-        {/* Main Verification Section */}
         <section className="max-w-4xl mx-auto">
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 shadow-2xl">
             <div className="flex items-center mb-8">
@@ -107,7 +100,6 @@ function VerifyDocument() {
               </div>
               <h2 className="text-3xl font-bold text-white">Verifikasi Dokumen</h2>
             </div>
-
             <div className="space-y-6">
               <div>
                 <label className="block text-gray-300 text-lg font-medium mb-3">Upload File PDF</label>
@@ -136,7 +128,6 @@ function VerifyDocument() {
                   </label>
                 </div>
               </div>
-
               <button
                 onClick={handleVerify}
                 disabled={isVerifying}
@@ -152,8 +143,6 @@ function VerifyDocument() {
                 )}
               </button>
             </div>
-
-            {/* Results */}
             {result && (
               <div className="mt-8 p-6 rounded-xl border transition-all duration-500 animate-fadeIn">
                 <div className="flex items-center mb-4">
@@ -164,7 +153,6 @@ function VerifyDocument() {
                   )}
                   <h3 className="text-2xl font-semibold text-white">Hasil Verifikasi</h3>
                 </div>
-
                 {result.message ? (
                   <div className="bg-emerald-900/30 border border-emerald-500/30 rounded-xl p-6">
                     <p className="text-emerald-300 font-medium text-lg mb-4">{result.message}</p>
@@ -197,31 +185,14 @@ function VerifyDocument() {
           </div>
         </section>
 
-        {/* Benefits Section */}
         <section className="mt-16 max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-white mb-12">Mengapa VerifAkademik?</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              {
-                title: 'Keamanan Tinggi',
-                desc: 'Teknologi enkripsi militer-grade dengan AES-256 dan RSA',
-                color: 'from-purple-500 to-indigo-500'
-              },
-              {
-                title: 'Anti Pemalsuan',
-                desc: 'Sistem hash kriptografi mencegah manipulasi dokumen',
-                color: 'from-cyan-500 to-blue-500'
-              },
-              {
-                title: 'Verifikasi Instan',
-                desc: 'Hasil verifikasi real-time dalam hitungan detik',
-                color: 'from-emerald-500 to-teal-500'
-              },
-              {
-                title: 'Transparan',
-                desc: 'Audit trail lengkap untuk setiap proses verifikasi',
-                color: 'from-orange-500 to-red-500'
-              }
+              { title: 'Keamanan Tinggi', desc: 'Teknologi enkripsi militer-grade dengan AES-256 dan RSA', color: 'from-purple-500 to-indigo-500' },
+              { title: 'Anti Pemalsuan', desc: 'Sistem hash kriptografi mencegah manipulasi dokumen', color: 'from-cyan-500 to-blue-500' },
+              { title: 'Verifikasi Instan', desc: 'Hasil verifikasi real-time dalam hitungan detik', color: 'from-emerald-500 to-teal-500' },
+              { title: 'Transparan', desc: 'Audit trail lengkap untuk setiap proses verifikasi', color: 'from-orange-500 to-red-500' }
             ].map((benefit, index) => (
               <div key={index} className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 text-center hover:bg-slate-800/70 transition-all duration-300 hover:scale-105">
                 <div className={`bg-gradient-to-r ${benefit.color} w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center`}>
@@ -233,18 +204,9 @@ function VerifyDocument() {
             ))}
           </div>
         </section>
-
-        {/* Footer */}
-        <footer className="mt-20 text-center text-gray-400">
-          <div className="flex items-center justify-center mb-4">
-            <div className="bg-gradient-to-r from-purple-500 to-cyan-500 p-2 rounded-lg">
-              <Lock className="w-6 h-6 text-white" />
-            </div>
-          </div>
-          <p className="text-lg">Powered by Advanced Cryptography Technology</p>
-          <p className="text-sm mt-2">© 2024 VerifAkademik. Semua hak dilindungi undang-undang.</p>
-        </footer>
       </div>
+
+
 
       <style jsx>{`
         @keyframes fadeIn {
