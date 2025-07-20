@@ -1,25 +1,25 @@
-const express = require('express');
-const { Client } = require('@neondatabase/serverless');
-const CryptoJS = require('crypto-js');
-const { KJUR, hextob64 } = require('jsrsasign');
-const cors = require('cors');
-const fileUpload = require('express-fileupload');
-require('dotenv').config();
+import express from 'express';
+import { Pool } from 'pg';
+import CryptoJS from 'crypto-js';
+import { KJUR, hextob64 } from 'jsrsasign';
+import cors from 'cors';
+import fileUpload from 'express-fileupload';
+import 'dotenv/config';
 
 const app = express();
 app.use(cors());
 app.use(fileUpload());
 app.use(express.json());
 
-const client = new Client({
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
 });
 
 async function connectToDatabase() {
   try {
-    await client.connect();
+    const client = await pool.connect();
     console.log('Connected to Neon DB');
+    client.release();
   } catch (error) {
     console.error('Failed to connect to Neon DB:', error.message);
     process.exit(1);
@@ -28,163 +28,94 @@ async function connectToDatabase() {
 connectToDatabase();
 
 app.get('/api/documents', async (req, res) => {
+  let client;
   try {
-    const result = await client.query('SELECT * FROM documents');
+    client = await pool.connect();
+    const result = await client.query('SELECT id, student_name, student_nim, document_type, created_at FROM documents');
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching documents:', error.message);
-    res.status(500).json({ error: 'Gagal mengambil data dokumen: ' + error.message });
+    res.status(500).json({ error: 'Gagal mengambil data dokumen.' });
+  } finally {
+    if (client) client.release();
   }
 });
 
 app.post('/api/upload', async (req, res) => {
+  if (!req.files || !req.files.file) {
+    return res.status(400).json({ error: 'Harap unggah file PDF.' });
+  }
+  if (!req.body.student_name || !req.body.student_nim || !req.body.document_type) {
+    return res.status(400).json({ error: 'Harap isi semua kolom.' });
+  }
+
+  const { student_name, student_nim, document_type } = req.body;
+  const file = req.files.file;
+
   try {
-    console.log('Received upload request:', {
-      body: req.body,
-      files: req.files ? Object.keys(req.files) : null
-    });
+    const fileWordArray = CryptoJS.lib.WordArray.create(file.data);
+    const file_hash = CryptoJS.SHA256(fileWordArray).toString();
 
-    // Validasi input
-    if (!req.files || !req.files.file) {
-      console.error('No file uploaded');
-      return res.status(400).json({ error: 'Harap unggah file PDF' });
-    }
-    if (!req.body.student_name || !req.body.student_nim || !req.body.document_type) {
-      console.error('Missing required fields:', req.body);
-      return res.status(400).json({ error: 'Harap isi semua kolom (nama, NIM, jenis dokumen)' });
-    }
+    const privateKey = process.env.PRIVATE_KEY;
+    const sig = new KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
+    sig.init(privateKey);
+    sig.updateString(file_hash);
+    const signature = hextob64(sig.sign());
 
-    const { student_name, student_nim, document_type } = req.body;
-    const file = req.files.file;
-
-    // Validasi format file
-    if (!file.mimetype.includes('pdf')) {
-      console.error('Invalid file type:', file.mimetype);
-      return res.status(400).json({ error: 'File harus berformat PDF' });
-    }
-
-    // Enkripsi AES
-    let ciphertext;
+    const client = await pool.connect();
     try {
-      const key = CryptoJS.enc.Hex.parse(process.env.AES_KEY);
-      const iv = CryptoJS.lib.WordArray.random(16);
-      ciphertext = CryptoJS.AES.encrypt(file.data.toString('binary'), key, { iv }).toString();
-    } catch (error) {
-      console.error('AES encryption failed:', error.message);
-      return res.status(500).json({ error: 'Gagal mengenkripsi dokumen: ' + error.message });
+      const query = 'INSERT INTO documents (student_name, student_nim, document_type, file_hash, signature) VALUES ($1, $2, $3, $4, $5)';
+      await client.query(query, [student_name, student_nim, document_type, file_hash, signature]);
+      res.status(201).json({ message: 'Dokumen berhasil disahkan.' });
+    } finally {
+      client.release();
     }
-
-    // Tanda tangan RSA
-    let signature;
-    try {
-      const timestamp = new Date().toISOString();
-      const dataToSign = ciphertext + timestamp;
-      const prvKey = process.env.PRIVATE_KEY.replace(/\\n/g, '\n').trim();
-      
-      // Validasi kunci privat
-      if (!prvKey.includes('-----BEGIN PRIVATE KEY-----') || !prvKey.includes('-----END PRIVATE KEY-----')) {
-        console.error('Invalid private key format');
-        return res.status(500).json({ error: 'Format kunci privat tidak valid' });
-      }
-
-      const sig = new KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
-      try {
-        sig.init(prvKey);
-      } catch (error) {
-        console.error('RSA init failed:', error.message);
-        return res.status(500).json({ error: 'Gagal menginisialisasi tanda tangan RSA: ' + error.message });
-      }
-      sig.updateString(dataToSign);
-      signature = hextob64(sig.sign()); // Konversi ke base64 untuk konsistensi
-    } catch (error) {
-      console.error('RSA signature failed:', error.message);
-      return res.status(500).json({ error: 'Gagal membuat tanda tangan digital: ' + error.message });
-    }
-
-    // Simpan ke database
-    try {
-      await client.query(
-        'INSERT INTO documents (student_name, student_nim, document_type, ciphertext, signature, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
-        [student_name, student_nim, document_type, ciphertext, signature, new Date()]
-      );
-    } catch (error) {
-      console.error('Database insert failed:', error.message);
-      return res.status(500).json({ error: 'Gagal menyimpan dokumen ke database: ' + error.message });
-    }
-
-    res.json({ message: 'Dokumen berhasil disahkan' });
   } catch (error) {
-    console.error('Error in /api/upload:', error.message);
-    res.status(500).json({ error: 'Gagal mengunggah dokumen: ' + error.message });
+    console.error('Upload Error:', error);
+    res.status(500).json({ error: 'Gagal memproses dokumen.' });
   }
 });
 
 app.post('/api/verify', async (req, res) => {
+  if (!req.files || !req.files.file) {
+    return res.status(400).json({ error: 'Harap unggah file PDF.' });
+  }
+
+  const file = req.files.file;
+
   try {
-    if (!req.files || !req.files.file) {
-      console.error('No file uploaded for verification');
-      return res.status(400).json({ error: 'Harap unggah file PDF' });
-    }
+    const fileWordArray = CryptoJS.lib.WordArray.create(file.data);
+    const hashToVerify = CryptoJS.SHA256(fileWordArray).toString();
 
-    const file = req.files.file;
-
-    // Enkripsi AES
-    let ciphertext;
+    const client = await pool.connect();
     try {
-      const key = CryptoJS.enc.Hex.parse(process.env.AES_KEY);
-      const iv = CryptoJS.lib.WordArray.random(16);
-      ciphertext = CryptoJS.AES.encrypt(file.data.toString('binary'), key, { iv }).toString();
-    } catch (error) {
-      console.error('AES encryption failed:', error.message);
-      return res.status(500).json({ error: 'Gagal mengenkripsi dokumen: ' + error.message });
-    }
+      const result = await client.query('SELECT * FROM documents WHERE file_hash = $1', [hashToVerify]);
 
-    // Cari ciphertext
-    const result = await client.query('SELECT * FROM documents WHERE ciphertext = $1', [ciphertext]);
-    if (result.rows.length === 0) {
-      console.error('Document not found for ciphertext:', ciphertext);
-      return res.status(404).json({ error: 'Dokumen tidak ditemukan' });
-    }
-
-    const { signature, student_name, student_nim, document_type, created_at } = result.rows[0];
-    let isValid;
-    try {
-      const dataToVerify = ciphertext + created_at.toISOString();
-      const pubKey = process.env.PUBLIC_KEY.replace(/\\n/g, '\n').trim();
-      
-      // Validasi kunci publik
-      if (!pubKey.includes('-----BEGIN PUBLIC KEY-----') || !pubKey.includes('-----END PUBLIC KEY-----')) {
-        console.error('Invalid public key format');
-        return res.status(500).json({ error: 'Format kunci publik tidak valid' });
+      if (result.rows.length === 0) {
+        return res.status(404).json({ valid: false, message: 'Dokumen tidak terdaftar atau telah diubah.' });
       }
+
+      const doc = result.rows[0];
+      const signatureFromDB = doc.signature;
+      const publicKey = process.env.PUBLIC_KEY;
 
       const sig = new KJUR.crypto.Signature({ alg: 'SHA256withRSA' });
-      try {
-        sig.init(pubKey);
-      } catch (error) {
-        console.error('RSA verification init failed:', error.message);
-        return res.status(500).json({ error: 'Gagal menginisialisasi verifikasi RSA: ' + error.message });
-      }
-      sig.updateString(dataToVerify);
-      isValid = sig.verify(signature);
-    } catch (error) {
-      console.error('RSA verification failed:', error.message);
-      return res.status(500).json({ error: 'Gagal memverifikasi tanda tangan: ' + error.message });
-    }
+      sig.init(publicKey);
+      sig.updateString(hashToVerify);
+      const isValid = sig.verify(signatureFromDB);
 
-    if (isValid) {
-      res.json({
-        message: 'Dokumen asli dan terverifikasi',
-        data: { student_name, student_nim, document_type, created_at }
-      });
-    } else {
-      console.error('Signature verification failed');
-      return res.status(400).json({ error: 'Verifikasi gagal: Tanda tangan tidak valid' });
+      if (isValid) {
+        res.status(200).json({ valid: true, message: 'Dokumen Asli dan Terverifikasi', data: doc });
+      } else {
+        res.status(400).json({ valid: false, message: 'Verifikasi Gagal: Tanda tangan tidak valid.' });
+      }
+    } finally {
+      client.release();
     }
   } catch (error) {
-    console.error('Error in /api/verify:', error.message);
-    return res.status(500).json({ error: 'Gagal memverifikasi dokumen: ' + error.message });
+    console.error('Verify Error:', error);
+    res.status(500).json({ error: 'Gagal memverifikasi dokumen.' });
   }
 });
 
-app.listen(3000, () => console.log('Server berjalan di port 3000'));
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`Server berjalan di port ${port}`));
