@@ -1,15 +1,13 @@
 import { Shield, Lock, Menu, X, LogIn } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; 
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const scrollToSection = (sectionId) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-    setIsMenuOpen(false);
+  const handleLogin = () => {
+    navigate('/dashboard'); 
   };
 
   return (
@@ -28,19 +26,10 @@ function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <button onClick={() => scrollToSection('penjelasan')} className="text-gray-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg transition-all duration-300">
-              Penjelasan
-            </button>
-            <button onClick={() => scrollToSection('fitur')} className="text-gray-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg transition-all duration-300">
-              Fitur
-            </button>
-            <button onClick={() => scrollToSection('manfaat')} className="text-gray-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg transition-all duration-300">
-              Manfaat
-            </button>
-            <button onClick={() => scrollToSection('verifikasi')} className="text-gray-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg transition-all duration-300">
-              Verifikasi
-            </button>
-            <button className="bg-gradient-to-r from-purple-600 to-cyan-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2 shadow-lg">
+            <button
+              onClick={handleLogin}
+              className="bg-gradient-to-r from-purple-600 to-cyan-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2 shadow-lg"
+            >
               <LogIn className="w-4 h-4" />
               <span>Masuk Admin</span>
             </button>
@@ -48,7 +37,10 @@ function Navbar() {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-300 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-gray-300 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors"
+            >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
@@ -58,19 +50,10 @@ function Navbar() {
         {isMenuOpen && (
           <div className="md:hidden mt-4 pb-4 border-t border-slate-700">
             <div className="flex flex-col space-y-2 pt-4">
-              <button onClick={() => scrollToSection('penjelasan')} className="text-left text-gray-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg transition-all duration-300">
-                Penjelasan
-              </button>
-              <button onClick={() => scrollToSection('fitur')} className="text-left text-gray-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg transition-all duration-300">
-                Fitur
-              </button>
-              <button onClick={() => scrollToSection('manfaat')} className="text-left text-gray-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg transition-all duration-300">
-                Manfaat
-              </button>
-              <button onClick={() => scrollToSection('verifikasi')} className="text-left text-gray-300 hover:text-white hover:bg-slate-800 px-3 py-2 rounded-lg transition-all duration-300">
-                Verifikasi
-              </button>
-              <button className="bg-gradient-to-r from-purple-600 to-cyan-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-cyan-700 transition-all duration-300 flex items-center space-x-2 shadow-lg mt-2">
+              <button
+                onClick={handleLogin} 
+                className="bg-gradient-to-r from-purple-600 to-cyan-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-cyan-700 transition-all duration-300 flex items-center space-x-2 shadow-lg mt-2"
+              >
                 <LogIn className="w-4 h-4" />
                 <span>Masuk Admin</span>
               </button>
